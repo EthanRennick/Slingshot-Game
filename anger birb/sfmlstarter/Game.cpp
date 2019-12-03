@@ -48,6 +48,8 @@ public:
 	sf::RectangleShape target;
 
 	bool readyToFire;
+	bool wind;
+	 sf::Vector2f windVelocity = { .97,0};
 
 	sf::Vector2f lineLength;
 
@@ -85,6 +87,7 @@ public:
 		ground.setPosition(0, 590);
 
 		readyToFire = false;
+		wind = false;
 
 		target.setFillColor(sf::Color::Red);
 		target.setPosition(rand() % 700 + 300, 580);
@@ -128,34 +131,26 @@ public:
 						playerState = drawingLine;
 					}
 				}
+
 				if (playerState == drawingLine)
 				{
+					playerShape.setPosition(static_cast<sf::Vector2f>(sf::Mouse::getPosition(window)));
 					if (!sf::Mouse::isButtonPressed(sf::Mouse::Left))
 					{
-						//pointA = thor::length(playerShape.getPosition());
-						//pointB = thor::length(sf::Mouse::getPosition());
-						//distance = pointA - pointB;
-
-						sf::Vector2f localPosition = (sf::Vector2f)sf::Mouse::getPosition(window);
+					
+						sf::Vector2f localPosition = slingshot.getPosition();
 						sf::Vector2f newVelocity;
 						newVelocity = localPosition - playerShape.getPosition();
-						distance = thor::length(playerShape.getPosition()) - thor::length(localPosition);
-						//thor::
-						newVelocity.x = distance;
-						if (thor::length(moveForce) < playerMaxSpeed)
-						{
-							velocity = -newVelocity;
-						}
-						else {
-							thor::setLength(moveForce, playerMaxSpeed);
-							velocity = -newVelocity;
-						}
-
+					
+						velocity.x = newVelocity.x * 5;
+						velocity.y = newVelocity.y * 5;
+					
 						playerState = Jump;
 						gravity.y = 9.8 * gravityScale;
 						readyToFire = false;
 					}
 				}
+
 				if (playerState == Jump)
 				{
 					playerState = ready;
@@ -165,14 +160,17 @@ public:
 				{
 					target.setPosition(rand() % 700 + 300, 580);
 					playerShape.setPosition(185, 400);
-
+					velocity = { 0,0 };
+					readyToFire == true;
 				}
 
-				
 				if (readyToFire == false)
 				{
 					velocity = velocity + (gravity * timeSinceLastUpdate.asSeconds());
-
+					if (wind)
+					{
+						velocity -= windVelocity;
+					}
 					playerShape.move(velocity.x * timeSinceLastUpdate.asSeconds(), velocity.y * timeSinceLastUpdate.asSeconds());
 				}
 
@@ -185,11 +183,24 @@ public:
 				{
 					velocity.x = -velocity.x;
 				}
-
-				if (playerShape.getGlobalBounds().intersects(slingshot.getGlobalBounds()) && readyToFire == false)
+				if (playerShape.getPosition().x < 0 - playerShape.getRadius() - 10)
 				{
-					readyToFire = true;
-					playerShape.setPosition(185, 480);
+					velocity = { 0,0 };
+					playerShape.setPosition(185, 500);
+					readyToFire == true;
+					gravity = {0.0, 0.0};
+				}
+
+				if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter))
+				{
+					if (wind)
+					{
+						wind = false;
+					}
+					else
+					{
+						wind = true;
+					}
 				}
 
 				window.clear();
@@ -199,11 +210,8 @@ public:
 					sf::Vertex line[] =
 					{
 						sf::Vertex(sf::Vector2f(localPosition.x, localPosition.y)),
-						sf::Vertex(sf::Vector2f(playerShape.getPosition().x, playerShape.getPosition().y))
+						sf::Vertex(sf::Vector2f(slingshot.getPosition().x, slingshot.getPosition().y))
 					};
-
-					
-
 					window.draw(line, 2, sf::Lines);
 				}
 				window.draw(ground);
